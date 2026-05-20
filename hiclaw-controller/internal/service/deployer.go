@@ -32,6 +32,7 @@ type WorkerDeployRequest struct {
 	MatrixToken    string
 	GatewayKey     string
 	MatrixPassword string
+	MinIOPassword  string
 
 	// MCP servers declared in spec.mcpServers. The deployer translates this into
 	// mcporter-servers.json and injects Authorization: Bearer <GatewayKey>.
@@ -248,6 +249,15 @@ func (d *Deployer) DeployWorkerConfig(ctx context.Context, req WorkerDeployReque
 	if req.MatrixPassword != "" {
 		if err := d.oss.PutObject(ctx, agentPrefix+"/credentials/matrix/password", []byte(req.MatrixPassword)); err != nil {
 			logger.Error(err, "failed to write Matrix password to storage (non-fatal)")
+		}
+	}
+
+	if !req.Spec.DesiredContainerMan() {
+		// --- MinIO password to storage when containerManaged is explicitly set to false ---
+		if req.MinIOPassword != "" {
+			if err := d.oss.PutObject(ctx, agentPrefix+"/credentials/minio/password", []byte(req.MinIOPassword)); err != nil {
+				logger.Error(err, "failed to write MinIO password to storage (non-fatal)")
+			}
 		}
 	}
 
